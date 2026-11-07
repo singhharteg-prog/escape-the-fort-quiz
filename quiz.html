@@ -49,8 +49,10 @@ body {
 a { color: var(--accent); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-.top, form, .result, .foot { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+.quiz, .foot { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+.quiz { counter-reset: score answered; }
 .top { padding-top: 28px; padding-bottom: 8px; }
+.print-only { display: none; }
 .diva { width: 44px; height: 44px; display: block; margin-bottom: 8px; }
 .diva .flame { fill: var(--flame); }
 .diva .bowl, .diva .bowl-rim { fill: var(--accent); }
@@ -61,18 +63,14 @@ h1 { font-family: Georgia, "Times New Roman", serif; font-size: 34px; line-heigh
 
 .name { display: block; margin: 8px 0 4px; }
 .name span { display: block; font-weight: 700; margin-bottom: 4px; }
-input[type=text], input[type=number], select {
+input[type=text] {
   font: inherit; color: var(--ink); background: var(--card);
   border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px;
 }
 input[type=text] { width: 100%; }
-input:focus-visible, select:focus-visible, button:focus-visible, .opt:has(input:focus-visible) {
+input:focus-visible, button:focus-visible, .opt:has(input:focus-visible) {
   outline: 3px solid var(--accent); outline-offset: 2px;
 }
-
-.bar { position: sticky; top: 0; z-index: 2; background: var(--paper); border-bottom: 1px solid var(--line); }
-.bar-in { max-width: 680px; margin: 0 auto; padding: 8px 16px; font-size: 14px; color: var(--soft); position: relative; }
-.bar-in i { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: var(--flame); transition: width .3s; }
 
 .part { margin-top: 28px; }
 h2 { font-family: Georgia, "Times New Roman", serif; font-size: 24px; margin: 0 0 12px; }
@@ -99,52 +97,77 @@ h2 { font-family: Georgia, "Times New Roman", serif; font-size: 24px; margin: 0 
 .opt:has(input:checked) { border-color: var(--accent); background: var(--pick); }
 
 .num-wrap { clear: both; display: block; margin-top: 12px; }
-.num-wrap input { width: 8em; font-size: 20px; }
+.num-wrap input { width: 10em; font-size: 20px; }
 
-.order { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
-.order label { display: flex; gap: 10px; align-items: center; border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; }
-.order select { flex: none; width: 4.2em; padding: 8px; }
+.order { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 10px; }
+.row { border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.ev { display: block; margin-bottom: 6px; }
+.nums { display: flex; gap: 6px; flex-wrap: wrap; }
+.pos { position: relative; cursor: pointer; }
+.pos input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pos span {
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid var(--line); font-weight: 700; color: var(--soft);
+}
+.pos:has(input:checked) span { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.pos:has(input:focus-visible) span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.row:has(input:checked) { border-color: var(--accent); }
+
+/* counters: answered questions, and how many order rows are right */
+/* (on the number badge: the legend itself is display: contents, which never counts) */
+.q[data-count="1"]:has(input:checked) > legend .n,
+.q[data-count="1"][data-type=number]:has(input:not(:placeholder-shown)) > legend .n { counter-increment: answered; }
+.q[data-type=order] { counter-reset: placed; }
+.row:has(input[data-c]:checked) { counter-increment: placed; }
+.placed::before { content: counter(placed) " of 7"; font-weight: 700; }
+.answered-num::before { content: counter(answered); }
+.score-num::before { content: counter(score); }
 
 /* after marking */
-.q.is-right { border-color: var(--right); }
-.q.is-wrong { border-color: var(--wrong); }
-.fb { margin-top: 12px; border-radius: 10px; padding: 10px 12px; font-size: 15px; }
-.is-right .fb { background: var(--right-bg); }
-.is-wrong .fb { background: var(--wrong-bg); }
+.fb { display: none; margin-top: 12px; border-radius: 10px; padding: 10px 12px; font-size: 15px; background: var(--wrong-bg); }
 .fb .verdict { font-weight: 700; margin: 0 0 4px; }
-.is-right .verdict { color: var(--right); }
-.is-wrong .verdict { color: var(--wrong); }
+.v-right { color: var(--right); }
+.v-wrong { color: var(--wrong); }
+.quiz:has(#check:checked) .opt:has(input[data-c]) { border-color: var(--right); }
+.quiz:has(#check:checked) .pos:has(input[data-c]) span { border-color: var(--right); }
+.quiz:has(#check:checked) .q { pointer-events: none; }
+.quiz:has(#check:checked) .q a { pointer-events: auto; }
 .fb p { margin: 4px 0 0; }
-.opt.was-right { border-color: var(--right); }
-.locked .opt, .locked .order label { cursor: default; }
 
-.actions { margin: 28px 0 8px; display: grid; gap: 10px; }
-.nudge { margin: 0; min-height: 1.5em; font-weight: 600; color: var(--wrong); }
-button {
-  font: inherit; font-weight: 700; cursor: pointer; border-radius: 12px; padding: 14px 18px;
+.finish { margin: 36px 0 8px; padding-top: 20px; border-top: 2px solid var(--line); display: grid; gap: 14px; }
+.finish h2 { margin: 0; }
+.answered { margin: 0; color: var(--soft); }
+.name { display: block; }
+.check-btn {
+  display: block; text-align: center; cursor: pointer; font-weight: 700; border-radius: 12px; padding: 14px 18px;
   border: 2px solid var(--accent); background: var(--accent); color: var(--paper);
 }
-button.ghost { background: transparent; color: var(--accent); }
-button.small { padding: 8px 14px; font-size: 15px; }
-
-.result { margin-top: 8px; scroll-margin-top: 56px; }
-.q { scroll-margin-top: 56px; }
-.opt.was-right:has(input:checked) { border-color: var(--right); background: var(--right-bg); }
-.result .card {
-  border: 2px solid var(--accent); border-radius: 16px; padding: 20px; background: var(--card); text-align: center;
+.check-btn input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.check-btn:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 3px; }
+.check-btn .on, .score-card, .again { display: none; }
+.check-btn:has(input:checked) { background: transparent; color: var(--accent); }
+.check-btn:has(input:checked) .off { display: none; }
+.check-btn:has(input:checked) .on { display: inline; }
+.quiz:has(#check:checked) .score-card, .quiz:has(#check:checked) .again { display: block; }
+.score-card { border: 2px solid var(--accent); border-radius: 16px; padding: 20px; background: var(--card); text-align: center; }
+.score-card .score { font-family: Georgia, serif; font-size: 56px; line-height: 1.1; margin: 0 0 8px; }
+.score-card .score small { font-size: 24px; color: var(--soft); }
+.score-card .meta { margin: 6px 0 0; font-size: 15px; color: var(--soft); }
+button {
+  font: inherit; font-weight: 700; cursor: pointer; border-radius: 12px; padding: 14px 18px;
+  border: 2px solid var(--accent); background: transparent; color: var(--accent);
 }
-.result .who { margin: 0; font-weight: 700; color: var(--accent); }
-.result .score { font-family: Georgia, serif; font-size: 56px; line-height: 1.1; margin: 6px 0; }
-.result .score small { font-size: 24px; color: var(--soft); }
-.result .msg { margin: 0 0 6px; font-weight: 600; }
-.result .meta { margin: 0; font-size: 14px; color: var(--soft); }
-.result .misses { text-align: left; margin: 14px 0 0; font-size: 15px; }
 
 .foot { margin: 36px auto 48px; font-size: 14px; color: var(--soft); }
 
 .print-only { display: none; }
 @media print {
   .print-only { display: inline; }
+  .print-name { display: block; margin: 16px 0 0; font-weight: 700; }
+  .finish, .foot { display: none !important; }
+  .pos span { width: 24px; height: 24px; border: 1px solid #000; color: #000; background: #fff; font-weight: 400; }
+  .row { padding: 4px 8px; border-width: 1px; }
+  .ev { margin-bottom: 2px; }
   .screen-only { display: none; }
   :root { color-scheme: light; }
   .opt input, .opts input {
@@ -155,378 +178,322 @@ button.small { padding: 8px 14px; font-size: 15px; }
   .opts { grid-template-columns: 1fr 1fr; }
   :root { --paper: #fff; --card: #fff; --ink: #000; --soft: #333; --accent: #000; --line: #999; --pick: #fff; }
   body { font-size: 12pt; }
-  .bar, .actions, .result, .foot button, .fb, noscript, .diva { display: none !important; }
-  .name input { border: 0; border-bottom: 1px solid #000; border-radius: 0; }
+  .fb, .diva { display: none !important; }
   .q { break-inside: avoid; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
   .opts { gap: 4px; margin-top: 6px; }
   .opt { min-height: 0; padding: 4px 8px; border-width: 1px; }
-  .order label { padding: 4px 8px; border-width: 1px; }
-  .order select { appearance: none; -webkit-appearance: none; color: transparent; width: 2.6em; height: 1.8em; padding: 0; border: 1px solid #000; }
   .num-wrap input { border: 1px solid #000; height: 1.8em; }
+  .num-wrap input::placeholder { color: transparent; }
   .part { margin-top: 14px; }
   a { text-decoration: none; color: #000; }
 }
 
+/* ---- marking (generated by tools/build.mjs) ---- */
+.q[data-type=choice]:has(input[data-c]:checked)[data-count="1"] { counter-increment: score; }
+.q[data-type=multi]:not(:has(input[data-c]:not(:checked))):not(:has(input:not([data-c]):checked))[data-count="1"] { counter-increment: score; }
+.q[data-type=number]:has(input:valid)[data-count="1"] { counter-increment: score; }
+.q[data-type=order]:not(:has(input[data-c]:not(:checked)))[data-count="1"] { counter-increment: score; }
+.quiz:has(#check:checked) .q { border-color: var(--wrong); }
+.quiz:has(#check:checked) .fb { display: block; }
+.quiz:has(#check:checked) .q .v-right { display: none; }
+.quiz:has(#check:checked) .q[data-type=choice]:has(input[data-c]:checked) { border-color: var(--right); }
+.quiz:has(#check:checked) .q[data-type=multi]:not(:has(input[data-c]:not(:checked))):not(:has(input:not([data-c]):checked)) { border-color: var(--right); }
+.quiz:has(#check:checked) .q[data-type=number]:has(input:valid) { border-color: var(--right); }
+.quiz:has(#check:checked) .q[data-type=order]:not(:has(input[data-c]:not(:checked))) { border-color: var(--right); }
+.quiz:has(#check:checked) .q[data-type=choice]:has(input[data-c]:checked) .fb { background: var(--right-bg); }
+.quiz:has(#check:checked) .q[data-type=multi]:not(:has(input[data-c]:not(:checked))):not(:has(input:not([data-c]):checked)) .fb { background: var(--right-bg); }
+.quiz:has(#check:checked) .q[data-type=number]:has(input:valid) .fb { background: var(--right-bg); }
+.quiz:has(#check:checked) .q[data-type=order]:not(:has(input[data-c]:not(:checked))) .fb { background: var(--right-bg); }
+.quiz:has(#check:checked) .q[data-type=choice]:has(input[data-c]:checked) .v-right { display: block; }
+.quiz:has(#check:checked) .q[data-type=multi]:not(:has(input[data-c]:not(:checked))):not(:has(input:not([data-c]):checked)) .v-right { display: block; }
+.quiz:has(#check:checked) .q[data-type=number]:has(input:valid) .v-right { display: block; }
+.quiz:has(#check:checked) .q[data-type=order]:not(:has(input[data-c]:not(:checked))) .v-right { display: block; }
+.quiz:has(#check:checked) .q[data-type=choice]:has(input[data-c]:checked) :is(.v-wrong, .ans) { display: none; }
+.quiz:has(#check:checked) .q[data-type=multi]:not(:has(input[data-c]:not(:checked))):not(:has(input:not([data-c]):checked)) :is(.v-wrong, .ans) { display: none; }
+.quiz:has(#check:checked) .q[data-type=number]:has(input:valid) :is(.v-wrong, .ans) { display: none; }
+.quiz:has(#check:checked) .q[data-type=order]:not(:has(input[data-c]:not(:checked))) :is(.v-wrong, .ans) { display: none; }
+
 </style>
 </head>
 <body>
+<form class="quiz" action="#" onsubmit="return false">
 <header class="top">
   <svg class="diva" viewBox="0 0 64 64" aria-hidden="true"><path class="flame" d="M32 6c5 8 9 13 9 19a9 9 0 0 1-18 0c0-6 4-11 9-19z"/><path class="bowl" d="M6 38h52c-2 12-12 20-26 20S8 50 6 38z"/><path class="bowl-rim" d="M4 36h56v4H4z"/></svg>
   <p class="kicker">Team Nagni · Escape the Fort</p>
   <h1>Bandi Chhor Divas quiz</h1>
-  <p class="lede">Every answer is in the Basics of Sikhi video <a href="https://youtu.be/3myspuH4zkc" target="_blank" rel="noopener">“Diwali – A Festival of Light Animation”</a>. Use your notes. <span class="screen-only">When you’re done, press <b>Check my answers</b> and send your Jathedar a screenshot of your score.</span><span class="print-only">Circle or tick one answer unless it says otherwise, then hand this sheet to your Jathedar.</span></p>
-  <noscript><p class="warn">This page can’t mark itself here. Open it in Chrome or Safari, or write your answers on paper.</p></noscript>
-  <label class="name"><span>Your name</span><input type="text" id="who" autocomplete="name" maxlength="40"></label>
+  <p class="lede">Every answer is in the Basics of Sikhi video <a href="https://youtu.be/3myspuH4zkc" target="_blank" rel="noopener">“Diwali – A Festival of Light Animation”</a>. Use your notes. <span class="screen-only">When you’ve answered everything, put your name at the bottom, tick <b>Check my answers</b>, and send your Jathedar a screenshot of your score.</span><span class="print-only">Circle or tick one answer unless it says otherwise, then hand this sheet to your Jathedar.</span></p>
+  <p class="print-only print-name">Name: ______________________________</p>
 </header>
 
-<div class="bar" aria-hidden="true"><div class="bar-in"><span id="count">0</span> of 27 answered<i id="fill"></i></div></div>
-
-<form id="quiz" novalidate>
-<section class="part"><h2><span class="pid">Part A</span> Chandu's plans</h2><fieldset class="q" id="q1" data-type="choice">
+<section class="part"><h2><span class="pid">Part A</span> Chandu's plans</h2><fieldset class="q" id="q1" data-type="choice" data-count="1">
 <legend><span class="n">1</span><span class="text">News of Guru Hargobind Sahib Ji's powerful army spread across the land. Whose heart did it strike fear into? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q1" value="0"><span>Bhai Hardas Ji</span></label><label class="opt"><input type="radio" name="q1" value="1"><span>Chandu</span></label><label class="opt"><input type="radio" name="q1" value="2"><span>Emperor Jahangir</span></label><label class="opt"><input type="radio" name="q1" value="3"><span>The astrologer</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q2" data-type="choice">
-<legend><span class="n">2</span><span class="text">Chandu played a key role in whose martyrdom? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q2" value="0"><span>Guru Nanak Dev Ji</span></label><label class="opt"><input type="radio" name="q2" value="1"><span>Guru Ram Das Ji</span></label><label class="opt"><input type="radio" name="q2" value="2"><span>Guru Arjan Dev Ji</span></label><label class="opt"><input type="radio" name="q2" value="3"><span>Guru Angad Dev Ji</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q3" data-type="choice">
-<legend><span class="n">3</span><span class="text">Chandu's first plan was for Emperor Jahangir to meet the Guru. What did he hope would happen? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q3" value="0"><span>The emperor would despise the Guru and see them as an enemy</span></label><label class="opt"><input type="radio" name="q3" value="1"><span>The emperor would send the Guru back to Amritsar</span></label><label class="opt"><input type="radio" name="q3" value="2"><span>The emperor would make Chandu his chief minister</span></label><label class="opt"><input type="radio" name="q3" value="3"><span>The emperor would take away the Guru’s army</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q4" data-type="choice">
-<legend><span class="n">4</span><span class="text">On a journey, a fierce lion ambushed the emperor’s soldiers and turned towards the emperor. How did Guru Ji save him? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q4" value="0"><span>Ordered the soldiers to surround it</span></label><label class="opt"><input type="radio" name="q4" value="1"><span>Shot the lion with an arrow</span></label><label class="opt"><input type="radio" name="q4" value="2"><span>Blocked its attack with their shield and struck it with their sword</span></label><label class="opt"><input type="radio" name="q4" value="3"><span>Scared it away with a shout</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q5" data-type="choice">
-<legend><span class="n">5</span><span class="text">Lying to the emperor was a serious crime. How did Chandu pay the astrologer to do it? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q5" value="0"><span>5,000 coins first, and 500 more once the task was done</span></label><label class="opt"><input type="radio" name="q5" value="1"><span>52 gold coins</span></label><label class="opt"><input type="radio" name="q5" value="2"><span>500 coins first, and 5,000 more once the task was done</span></label><label class="opt"><input type="radio" name="q5" value="3"><span>A beautiful robe</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q6" data-type="choice">
-<legend><span class="n">6</span><span class="text">What lie did Chandu order the astrologer to tell the emperor? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q6" value="0"><span>That the kings in Gwalior prison were plotting against him</span></label><label class="opt"><input type="radio" name="q6" value="1"><span>That the emperor had been cursed, and would die if he didn’t act fast</span></label><label class="opt"><input type="radio" name="q6" value="2"><span>That a lion would attack the emperor again</span></label><label class="opt"><input type="radio" name="q6" value="3"><span>That the Guru was planning to attack Delhi</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q7" data-type="multi">
-<legend><span class="n">7</span><span class="text">To lift the &quot;curse&quot;, someone had to perform three tasks. Tick all three. <span class="tag">Tick 3</span></span></legend>
-<div class="opts"><label class="opt"><input type="checkbox" name="q7" value="0"><span>Bathe three times a day</span></label><label class="opt"><input type="checkbox" name="q7" value="1"><span>Fast for 40 days</span></label><label class="opt"><input type="checkbox" name="q7" value="2"><span>Meditate continuously</span></label><label class="opt"><input type="checkbox" name="q7" value="3"><span>Give 5,000 coins to the poor</span></label><label class="opt"><input type="checkbox" name="q7" value="4"><span>Do all of this in Gwalior prison for 40 days</span></label><label class="opt"><input type="checkbox" name="q7" value="5"><span>Wear a robe with 50 tassels</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q8" data-type="choice">
-<legend><span class="n">8</span><span class="text">Who did the lie say could complete the tasks for the emperor? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q8" value="0"><span>Only the emperor himself</span></label><label class="opt"><input type="radio" name="q8" value="1"><span>Only a king</span></label><label class="opt"><input type="radio" name="q8" value="2"><span>Only an astrologer</span></label><label class="opt"><input type="radio" name="q8" value="3"><span>Only someone called “Hargobind”</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q9" data-type="choice">
-<legend><span class="n">9</span><span class="text">True or false: Guru Hargobind Sahib Ji believed the curse was real. </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q9" value="0"><span>True</span></label><label class="opt"><input type="radio" name="q9" value="1"><span>False</span></label></div>
-<div class="fb" hidden></div>
-</fieldset></section>
-<section class="part"><h2><span class="pid">Part B</span> Inside Gwalior prison</h2><fieldset class="q" id="q10" data-type="choice">
-<legend><span class="n">10</span><span class="text">Who did Guru Ji find in Gwalior prison? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q10" value="0"><span>Many kings who had been wrongly imprisoned by the emperor</span></label><label class="opt"><input type="radio" name="q10" value="1"><span>Nobody: the prison was empty</span></label><label class="opt"><input type="radio" name="q10" value="2"><span>Chandu’s soldiers</span></label><label class="opt"><input type="radio" name="q10" value="3"><span>Sikhs who had been arrested for following the Guru</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q11" data-type="choice">
-<legend><span class="n">11</span><span class="text">Chandu knew Guru Ji would leave after 40 days. What was his plan to get rid of the Guru once and for all? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q11" value="0"><span>Poison in the Guru’s food</span></label><label class="opt"><input type="radio" name="q11" value="1"><span>Telling the emperor to keep Guru Ji for 40 more days</span></label><label class="opt"><input type="radio" name="q11" value="2"><span>A beautiful robe covered in a strong poison</span></label><label class="opt"><input type="radio" name="q11" value="3"><span>Bribing the guards to lock the gates</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q12" data-type="choice">
-<legend><span class="n">12</span><span class="text">Who stopped the poisoned robe from reaching Guru Ji? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q12" value="0"><span>The astrologer</span></label><label class="opt"><input type="radio" name="q12" value="1"><span>Bhai Pirana Ji</span></label><label class="opt"><input type="radio" name="q12" value="2"><span>Bhai Jetha Ji</span></label><label class="opt"><input type="radio" name="q12" value="3"><span>Bhai Hardas Ji, the prison warden</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q13" data-type="choice">
-<legend><span class="n">13</span><span class="text">In prison Guru Ji started a routine of Simran and Seva with the kings. What do these words mean? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q13" value="0"><span>Simran = singing, Seva = cooking</span></label><label class="opt"><input type="radio" name="q13" value="1"><span>Simran = fasting, Seva = bathing</span></label><label class="opt"><input type="radio" name="q13" value="2"><span>Simran = selfless service, Seva = meditation</span></label><label class="opt"><input type="radio" name="q13" value="3"><span>Simran = meditation, Seva = selfless service</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q14" data-type="choice">
-<legend><span class="n">14</span><span class="text">Fill the gap: Guru Ji showed that being in prison and being a ______ were two very different things. </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q14" value="0"><span>warden</span></label><label class="opt"><input type="radio" name="q14" value="1"><span>Sikh</span></label><label class="opt"><input type="radio" name="q14" value="2"><span>king</span></label><label class="opt"><input type="radio" name="q14" value="3"><span>prisoner</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q15" data-type="choice">
-<legend><span class="n">15</span><span class="text">The 40th day passed. Why was Guru Ji not released? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q15" value="0"><span>Chandu locked the prison gates</span></label><label class="opt"><input type="radio" name="q15" value="1"><span>The curse had not been lifted yet</span></label><label class="opt"><input type="radio" name="q15" value="2"><span>Guru Ji refused to leave</span></label><label class="opt"><input type="radio" name="q15" value="3"><span>The emperor had forgotten about Guru Ji</span></label></div>
-<div class="fb" hidden></div>
-</fieldset></section>
-<section class="part"><h2><span class="pid">Part C</span> The lions and the release</h2><fieldset class="q" id="q16" data-type="choice">
-<legend><span class="n">16</span><span class="text">Which two Sikhs snuck into the emperor’s fort at night? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q16" value="0"><span>Bhai Pirana Ji and Bhai Hardas Ji</span></label><label class="opt"><input type="radio" name="q16" value="1"><span>Bhai Jetha Ji and Bhai Pirana Ji</span></label><label class="opt"><input type="radio" name="q16" value="2"><span>Two of the kings from the prison</span></label><label class="opt"><input type="radio" name="q16" value="3"><span>Bhai Hardas Ji and Bhai Jetha Ji</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q17" data-type="choice">
-<legend><span class="n">17</span><span class="text">In the morning the emperor told his advisors about the lions. What did Chandu say? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q17" value="0"><span>That the Guru should be released at once</span></label><label class="opt"><input type="radio" name="q17" value="1"><span>That it was proof the curse was real, so Guru Ji should stay locked in prison</span></label><label class="opt"><input type="radio" name="q17" value="2"><span>That the astrologer had lied</span></label><label class="opt"><input type="radio" name="q17" value="3"><span>That it was only a bad dream</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q18" data-type="choice">
-<legend><span class="n">18</span><span class="text">After visiting as lions a second time, what did Bhai Jetha Ji disguise himself as? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q18" value="0"><span>A messenger</span></label><label class="opt"><input type="radio" name="q18" value="1"><span>A doctor</span></label><label class="opt"><input type="radio" name="q18" value="2"><span>An astrologer</span></label><label class="opt"><input type="radio" name="q18" value="3"><span>A guard</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q19" data-type="choice">
-<legend><span class="n">19</span><span class="text">A messenger came to release Guru Ji. What did Guru Ji tell the messenger? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q19" value="0"><span>That all the falsely imprisoned kings would have to be released too</span></label><label class="opt"><input type="radio" name="q19" value="1"><span>That the Guru would stay in prison for ever</span></label><label class="opt"><input type="radio" name="q19" value="2"><span>That Chandu must be punished first</span></label><label class="opt"><input type="radio" name="q19" value="3"><span>That the Sikhs must come and fetch the Guru</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q20" data-type="choice">
-<legend><span class="n">20</span><span class="text">The emperor did not want to free every prisoner. What did he declare? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q20" value="0"><span>The kings could go after another 40 days</span></label><label class="opt"><input type="radio" name="q20" value="1"><span>Only those who could hold onto the Guru’s robe could go</span></label><label class="opt"><input type="radio" name="q20" value="2"><span>Only kings who paid 500 coins could go</span></label><label class="opt"><input type="radio" name="q20" value="3"><span>Only the 10 richest kings could go</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q21" data-type="number">
-<legend><span class="n">21</span><span class="text">How many tassels did the Sikhs put on Guru Ji’s unique robe? </span></legend>
-<label class="num-wrap"><span class="sr">Your answer</span><input type="number" name="q21" inputmode="numeric" min="0" step="1" autocomplete="off"></label>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q22" data-type="choice">
-<legend><span class="n">22</span><span class="text">Two kings found no tassels left for them. What did Guru Ji let them hold onto? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q22" value="0"><span>Guru Ji’s sleeves</span></label><label class="opt"><input type="radio" name="q22" value="1"><span>Guru Ji’s sword</span></label><label class="opt"><input type="radio" name="q22" value="2"><span>Guru Ji’s hands</span></label><label class="opt"><input type="radio" name="q22" value="3"><span>Guru Ji’s horse</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q23" data-type="number">
-<legend><span class="n">23</span><span class="text">How many kings walked free by Guru Ji’s side? </span></legend>
-<label class="num-wrap"><span class="sr">Your answer</span><input type="number" name="q23" inputmode="numeric" min="0" step="1" autocomplete="off"></label>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q24" data-type="choice">
-<legend><span class="n">24</span><span class="text">From that day the Guru was known as “Bandi Chhor”. What does it mean? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q24" value="0"><span>The True King</span></label><label class="opt"><input type="radio" name="q24" value="1"><span>The Warrior</span></label><label class="opt"><input type="radio" name="q24" value="2"><span>The Light</span></label><label class="opt"><input type="radio" name="q24" value="3"><span>The Liberator</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q25" data-type="choice">
-<legend><span class="n">25</span><span class="text">Where did Guru Ji travel back to, where the Sikhs lit many diva lamps in celebration? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q25" value="0"><span>Amritsar Sahib</span></label><label class="opt"><input type="radio" name="q25" value="1"><span>Gwalior</span></label><label class="opt"><input type="radio" name="q25" value="2"><span>Anandpur Sahib</span></label><label class="opt"><input type="radio" name="q25" value="3"><span>Delhi</span></label></div>
-<div class="fb" hidden></div>
-</fieldset>
-<fieldset class="q" id="q26" data-type="choice">
-<legend><span class="n">26</span><span class="text">Why are diva lamps lit, according to the end of the video? </span></legend>
-<div class="opts"><label class="opt"><input type="radio" name="q26" value="0"><span>To recognise Guru Ji as the light that saves us from the prison of darkness</span></label><label class="opt"><input type="radio" name="q26" value="1"><span>To scare away lions</span></label><label class="opt"><input type="radio" name="q26" value="2"><span>To remember the emperor’s fort</span></label><label class="opt"><input type="radio" name="q26" value="3"><span>To mark the end of the 40 days</span></label></div>
-<div class="fb" hidden></div>
-</fieldset></section>
-<section class="part"><h2><span class="pid">Part D</span> The whole story</h2><fieldset class="q" id="q27" data-type="order">
-<legend><span class="n">27</span><span class="text">Put these events in the order they happen in the video. </span></legend>
-<p class="hint">Give each event a number: 1 for what happens first, 7 for what happens last.</p><ol class="order"><li><label><select name="q27-0" aria-label="Position of: Bhai Jetha Ji visits the emperor disguised as a doctor"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select><span>Bhai Jetha Ji visits the emperor disguised as a doctor</span></label></li><li><label><select name="q27-1" aria-label="Position of: Chandu pays an astrologer to lie"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select><span>Chandu pays an astrologer to lie</span></label></li><li><label><select name="q27-2" aria-label="Position of: Bhai Jetha Ji and Bhai Pirana Ji visit the emperor as lions"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select><span>Bhai Jetha Ji and Bhai Pirana Ji visit the emperor as lions</span></label></li><li><label><select name="q27-3" aria-label="Position of: Bhai Hardas Ji stops the poisoned robe"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select><span>Bhai Hardas Ji stops the poisoned robe</span></label></li><li><label><select name="q27-4" aria-label="Position of: Guru Ji enters Gwalior prison"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select><span>Guru Ji enters Gwalior prison</span></label></li><li><label><select name="q27-5" aria-label="Position of: The 52 kings walk free with Guru Ji"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select><span>The 52 kings walk free with Guru Ji</span></label></li><li><label><select name="q27-6" aria-label="Position of: Guru Ji saves the emperor from a lion"><option value="">–</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option></select><span>Guru Ji saves the emperor from a lion</span></label></li></ol>
-<div class="fb" hidden></div>
-</fieldset></section>
-<section class="part bonus-part"><h2><span class="pid">Bonus</span> One more, from the description</h2><fieldset class="q" id="bonus" data-type="choice">
-<legend><span class="n">Bonus</span><span class="text">The robe Guru Hargobind Sahib Ji wore to free the 52 kings can still be seen today. Where? </span></legend>
-<p class="src">From the video’s YouTube description, not the narration. Doesn’t count towards your score.</p><div class="opts"><label class="opt"><input type="radio" name="bonus" value="0"><span>In Gwalior fort</span></label><label class="opt"><input type="radio" name="bonus" value="1"><span>It no longer exists</span></label><label class="opt"><input type="radio" name="bonus" value="2"><span>Gurdwara Chola Sahib, Ghudani Kalan, Punjab</span></label><label class="opt"><input type="radio" name="bonus" value="3"><span>In the emperor’s fort in Delhi</span></label></div>
-<div class="fb" hidden></div>
-</fieldset></section>
-<div class="actions">
-  <p id="nudge" class="nudge" role="status" aria-live="polite"></p>
-  <button type="submit" id="check">Check my answers</button>
-  <button type="button" id="again" class="ghost" hidden>Try again</button>
+<div class="opts"><label class="opt"><input type="radio" name="q1" value="0"><span>Bhai Hardas Ji</span></label><label class="opt"><input type="radio" name="q1" value="1" data-c><span>Chandu</span></label><label class="opt"><input type="radio" name="q1" value="2"><span>Emperor Jahangir</span></label><label class="opt"><input type="radio" name="q1" value="3"><span>The astrologer</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Chandu</b></p>
+<p>Word of the army spread across the land and struck fear into the heart of Chandu. <a href="https://youtu.be/3myspuH4zkc?t=33" target="_blank" rel="noopener">Watch at 0:33</a></p>
 </div>
+</fieldset>
+<fieldset class="q" id="q2" data-type="choice" data-count="1">
+<legend><span class="n">2</span><span class="text">Chandu played a key role in whose martyrdom? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q2" value="0"><span>Guru Nanak Dev Ji</span></label><label class="opt"><input type="radio" name="q2" value="1"><span>Guru Ram Das Ji</span></label><label class="opt"><input type="radio" name="q2" value="2" data-c><span>Guru Arjan Dev Ji</span></label><label class="opt"><input type="radio" name="q2" value="3"><span>Guru Angad Dev Ji</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Guru Arjan Dev Ji</b></p>
+<p>Chandu played a key role in Guru Arjan Dev Ji's martyrdom, and was worried the Guru's son, Guru Hargobind Sahib Ji, would use their army to seek revenge. <a href="https://youtu.be/3myspuH4zkc?t=42" target="_blank" rel="noopener">Watch at 0:42</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q3" data-type="choice" data-count="1">
+<legend><span class="n">3</span><span class="text">Chandu's first plan was for Emperor Jahangir to meet the Guru. What did he hope would happen? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q3" value="0" data-c><span>The emperor would despise the Guru and see them as an enemy</span></label><label class="opt"><input type="radio" name="q3" value="1"><span>The emperor would send the Guru back to Amritsar</span></label><label class="opt"><input type="radio" name="q3" value="2"><span>The emperor would make Chandu his chief minister</span></label><label class="opt"><input type="radio" name="q3" value="3"><span>The emperor would take away the Guru’s army</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>The emperor would despise the Guru and see them as an enemy</b></p>
+<p>Chandu hoped the emperor would despise the Guru. Instead, the emperor became very fond of the Guru. <a href="https://youtu.be/3myspuH4zkc?t=58" target="_blank" rel="noopener">Watch at 0:58</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q4" data-type="choice" data-count="1">
+<legend><span class="n">4</span><span class="text">On a journey, a fierce lion ambushed the emperor’s soldiers and turned towards the emperor. How did Guru Ji save him? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q4" value="0"><span>Ordered the soldiers to surround it</span></label><label class="opt"><input type="radio" name="q4" value="1"><span>Shot the lion with an arrow</span></label><label class="opt"><input type="radio" name="q4" value="2" data-c><span>Blocked its attack with their shield and struck it with their sword</span></label><label class="opt"><input type="radio" name="q4" value="3"><span>Scared it away with a shout</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Blocked its attack with their shield and struck it with their sword</b></p>
+<p>The soldiers hid in fear. Guru Ji blocked the lion's attack with their shield and quickly struck it with their sword. <a href="https://youtu.be/3myspuH4zkc?t=95" target="_blank" rel="noopener">Watch at 1:35</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q5" data-type="choice" data-count="1">
+<legend><span class="n">5</span><span class="text">Lying to the emperor was a serious crime. How did Chandu pay the astrologer to do it? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q5" value="0"><span>5,000 coins first, and 500 more once the task was done</span></label><label class="opt"><input type="radio" name="q5" value="1"><span>52 gold coins</span></label><label class="opt"><input type="radio" name="q5" value="2" data-c><span>500 coins first, and 5,000 more once the task was done</span></label><label class="opt"><input type="radio" name="q5" value="3"><span>A beautiful robe</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>500 coins first, and 5,000 more once the task was done</b></p>
+<p>Chandu paid 500 coins first and promised another 5,000 coins when the task was done. <a href="https://youtu.be/3myspuH4zkc?t=126" target="_blank" rel="noopener">Watch at 2:06</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q6" data-type="choice" data-count="1">
+<legend><span class="n">6</span><span class="text">What lie did Chandu order the astrologer to tell the emperor? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q6" value="0"><span>That the kings in Gwalior prison were plotting against him</span></label><label class="opt"><input type="radio" name="q6" value="1" data-c><span>That the emperor had been cursed, and would die if he didn’t act fast</span></label><label class="opt"><input type="radio" name="q6" value="2"><span>That a lion would attack the emperor again</span></label><label class="opt"><input type="radio" name="q6" value="3"><span>That the Guru was planning to attack Delhi</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>That the emperor had been cursed, and would die if he didn’t act fast</b></p>
+<p>The lie was that Emperor Jahangir had been cursed and would die if he did not act fast. <a href="https://youtu.be/3myspuH4zkc?t=148" target="_blank" rel="noopener">Watch at 2:28</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q7" data-type="multi" data-count="1">
+<legend><span class="n">7</span><span class="text">To lift the &quot;curse&quot;, someone had to perform three tasks. Tick all three. <span class="tag">Tick 3</span></span></legend>
+<div class="opts"><label class="opt"><input type="checkbox" name="q7" value="0" data-c><span>Bathe three times a day</span></label><label class="opt"><input type="checkbox" name="q7" value="1"><span>Fast for 40 days</span></label><label class="opt"><input type="checkbox" name="q7" value="2" data-c><span>Meditate continuously</span></label><label class="opt"><input type="checkbox" name="q7" value="3"><span>Give 5,000 coins to the poor</span></label><label class="opt"><input type="checkbox" name="q7" value="4" data-c><span>Do all of this in Gwalior prison for 40 days</span></label><label class="opt"><input type="checkbox" name="q7" value="5"><span>Wear a robe with 50 tassels</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Bathe three times a day · Meditate continuously · Do all of this in Gwalior prison for 40 days</b></p>
+<p>Bathe three times a day; meditate continuously; and do it all in Gwalior prison for 40 days. <a href="https://youtu.be/3myspuH4zkc?t=157" target="_blank" rel="noopener">Watch at 2:37</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q8" data-type="choice" data-count="1">
+<legend><span class="n">8</span><span class="text">Who did the lie say could complete the tasks for the emperor? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q8" value="0"><span>Only the emperor himself</span></label><label class="opt"><input type="radio" name="q8" value="1"><span>Only a king</span></label><label class="opt"><input type="radio" name="q8" value="2"><span>Only an astrologer</span></label><label class="opt"><input type="radio" name="q8" value="3" data-c><span>Only someone called “Hargobind”</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Only someone called “Hargobind”</b></p>
+<p>Only someone called &quot;Hargobind&quot; could complete the tasks, and Chandu then suggested that only Guru Hargobind Sahib Ji fitted the description. <a href="https://youtu.be/3myspuH4zkc?t=179" target="_blank" rel="noopener">Watch at 2:59</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q9" data-type="choice" data-count="1">
+<legend><span class="n">9</span><span class="text">True or false: Guru Hargobind Sahib Ji believed the curse was real. </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q9" value="0"><span>True</span></label><label class="opt"><input type="radio" name="q9" value="1" data-c><span>False</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>False</b></p>
+<p>False. Guru Ji knew the emperor had been lied to, but agreed anyway: they knew they had to enter Gwalior prison for a different reason. <a href="https://youtu.be/3myspuH4zkc?t=236" target="_blank" rel="noopener">Watch at 3:56</a></p>
+</div>
+</fieldset></section>
+<section class="part"><h2><span class="pid">Part B</span> Inside Gwalior prison</h2><fieldset class="q" id="q10" data-type="choice" data-count="1">
+<legend><span class="n">10</span><span class="text">Who did Guru Ji find in Gwalior prison? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q10" value="0" data-c><span>Many kings who had been wrongly imprisoned by the emperor</span></label><label class="opt"><input type="radio" name="q10" value="1"><span>Nobody: the prison was empty</span></label><label class="opt"><input type="radio" name="q10" value="2"><span>Chandu’s soldiers</span></label><label class="opt"><input type="radio" name="q10" value="3"><span>Sikhs who had been arrested for following the Guru</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Many kings who had been wrongly imprisoned by the emperor</b></p>
+<p>Many of the prisoners were kings who had been wrongly imprisoned by the emperor. They were covered in lice, in dirty, ripped clothes, and many could hardly walk. <a href="https://youtu.be/3myspuH4zkc?t=247" target="_blank" rel="noopener">Watch at 4:07</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q11" data-type="choice" data-count="1">
+<legend><span class="n">11</span><span class="text">Chandu knew Guru Ji would leave after 40 days. What was his plan to get rid of the Guru once and for all? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q11" value="0"><span>Poison in the Guru’s food</span></label><label class="opt"><input type="radio" name="q11" value="1"><span>Telling the emperor to keep Guru Ji for 40 more days</span></label><label class="opt"><input type="radio" name="q11" value="2" data-c><span>A beautiful robe covered in a strong poison</span></label><label class="opt"><input type="radio" name="q11" value="3"><span>Bribing the guards to lock the gates</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>A beautiful robe covered in a strong poison</b></p>
+<p>Chandu had a beautiful robe made and covered it in a strong poison, hoping it would kill the Guru once worn. <a href="https://youtu.be/3myspuH4zkc?t=288" target="_blank" rel="noopener">Watch at 4:48</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q12" data-type="choice" data-count="1">
+<legend><span class="n">12</span><span class="text">Who stopped the poisoned robe from reaching Guru Ji? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q12" value="0"><span>The astrologer</span></label><label class="opt"><input type="radio" name="q12" value="1"><span>Bhai Pirana Ji</span></label><label class="opt"><input type="radio" name="q12" value="2"><span>Bhai Jetha Ji</span></label><label class="opt"><input type="radio" name="q12" value="3" data-c><span>Bhai Hardas Ji, the prison warden</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Bhai Hardas Ji, the prison warden</b></p>
+<p>Bhai Hardas Ji, the prison warden, had already heard of Chandu's plan and stopped the robe being delivered. <a href="https://youtu.be/3myspuH4zkc?t=301" target="_blank" rel="noopener">Watch at 5:01</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q13" data-type="choice" data-count="1">
+<legend><span class="n">13</span><span class="text">In prison Guru Ji started a routine of Simran and Seva with the kings. What do these words mean? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q13" value="0"><span>Simran = singing, Seva = cooking</span></label><label class="opt"><input type="radio" name="q13" value="1"><span>Simran = fasting, Seva = bathing</span></label><label class="opt"><input type="radio" name="q13" value="2"><span>Simran = selfless service, Seva = meditation</span></label><label class="opt"><input type="radio" name="q13" value="3" data-c><span>Simran = meditation, Seva = selfless service</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Simran = meditation, Seva = selfless service</b></p>
+<p>Guru Ji started a routine of meditation and selfless service, known as 'Simran' and 'Seva'. <a href="https://youtu.be/3myspuH4zkc?t=314" target="_blank" rel="noopener">Watch at 5:14</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q14" data-type="choice" data-count="1">
+<legend><span class="n">14</span><span class="text">Fill the gap: Guru Ji showed that being in prison and being a ______ were two very different things. </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q14" value="0"><span>warden</span></label><label class="opt"><input type="radio" name="q14" value="1"><span>Sikh</span></label><label class="opt"><input type="radio" name="q14" value="2"><span>king</span></label><label class="opt"><input type="radio" name="q14" value="3" data-c><span>prisoner</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>prisoner</b></p>
+<p>Being in prison and being a prisoner are two very different things. <a href="https://youtu.be/3myspuH4zkc?t=355" target="_blank" rel="noopener">Watch at 5:55</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q15" data-type="choice" data-count="1">
+<legend><span class="n">15</span><span class="text">The 40th day passed. Why was Guru Ji not released? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q15" value="0"><span>Chandu locked the prison gates</span></label><label class="opt"><input type="radio" name="q15" value="1"><span>The curse had not been lifted yet</span></label><label class="opt"><input type="radio" name="q15" value="2"><span>Guru Ji refused to leave</span></label><label class="opt"><input type="radio" name="q15" value="3" data-c><span>The emperor had forgotten about Guru Ji</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>The emperor had forgotten about Guru Ji</b></p>
+<p>The emperor had forgotten about Guru Ji, so the Sikhs realised they had to remind him themselves. <a href="https://youtu.be/3myspuH4zkc?t=371" target="_blank" rel="noopener">Watch at 6:11</a></p>
+</div>
+</fieldset></section>
+<section class="part"><h2><span class="pid">Part C</span> The lions and the release</h2><fieldset class="q" id="q16" data-type="choice" data-count="1">
+<legend><span class="n">16</span><span class="text">Which two Sikhs snuck into the emperor’s fort at night? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q16" value="0"><span>Bhai Pirana Ji and Bhai Hardas Ji</span></label><label class="opt"><input type="radio" name="q16" value="1" data-c><span>Bhai Jetha Ji and Bhai Pirana Ji</span></label><label class="opt"><input type="radio" name="q16" value="2"><span>Two of the kings from the prison</span></label><label class="opt"><input type="radio" name="q16" value="3"><span>Bhai Hardas Ji and Bhai Jetha Ji</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Bhai Jetha Ji and Bhai Pirana Ji</b></p>
+<p>Bhai Jetha Ji and Bhai Pirana Ji snuck past the guards and found the emperor asleep. <a href="https://youtu.be/3myspuH4zkc?t=387" target="_blank" rel="noopener">Watch at 6:27</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q17" data-type="choice" data-count="1">
+<legend><span class="n">17</span><span class="text">In the morning the emperor told his advisors about the lions. What did Chandu say? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q17" value="0"><span>That the Guru should be released at once</span></label><label class="opt"><input type="radio" name="q17" value="1" data-c><span>That it was proof the curse was real, so Guru Ji should stay locked in prison</span></label><label class="opt"><input type="radio" name="q17" value="2"><span>That the astrologer had lied</span></label><label class="opt"><input type="radio" name="q17" value="3"><span>That it was only a bad dream</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>That it was proof the curse was real, so Guru Ji should stay locked in prison</b></p>
+<p>Chandu said this proved the curse was real, and advised keeping Guru Ji locked in prison. <a href="https://youtu.be/3myspuH4zkc?t=437" target="_blank" rel="noopener">Watch at 7:17</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q18" data-type="choice" data-count="1">
+<legend><span class="n">18</span><span class="text">After visiting as lions a second time, what did Bhai Jetha Ji disguise himself as? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q18" value="0"><span>A messenger</span></label><label class="opt"><input type="radio" name="q18" value="1" data-c><span>A doctor</span></label><label class="opt"><input type="radio" name="q18" value="2"><span>An astrologer</span></label><label class="opt"><input type="radio" name="q18" value="3"><span>A guard</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>A doctor</b></p>
+<p>The terrified emperor called for a doctor, and Bhai Jetha Ji disguised himself as one. <a href="https://youtu.be/3myspuH4zkc?t=467" target="_blank" rel="noopener">Watch at 7:47</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q19" data-type="choice" data-count="1">
+<legend><span class="n">19</span><span class="text">A messenger came to release Guru Ji. What did Guru Ji tell the messenger? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q19" value="0" data-c><span>That all the falsely imprisoned kings would have to be released too</span></label><label class="opt"><input type="radio" name="q19" value="1"><span>That the Guru would stay in prison for ever</span></label><label class="opt"><input type="radio" name="q19" value="2"><span>That Chandu must be punished first</span></label><label class="opt"><input type="radio" name="q19" value="3"><span>That the Sikhs must come and fetch the Guru</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>That all the falsely imprisoned kings would have to be released too</b></p>
+<p>The kings did not want to be without the Guru. Guru Ji said that if the Guru was released, all the falsely imprisoned kings would have to be released too. <a href="https://youtu.be/3myspuH4zkc?t=519" target="_blank" rel="noopener">Watch at 8:39</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q20" data-type="choice" data-count="1">
+<legend><span class="n">20</span><span class="text">The emperor did not want to free every prisoner. What did he declare? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q20" value="0"><span>The kings could go after another 40 days</span></label><label class="opt"><input type="radio" name="q20" value="1" data-c><span>Only those who could hold onto the Guru’s robe could go</span></label><label class="opt"><input type="radio" name="q20" value="2"><span>Only kings who paid 500 coins could go</span></label><label class="opt"><input type="radio" name="q20" value="3"><span>Only the 10 richest kings could go</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Only those who could hold onto the Guru’s robe could go</b></p>
+<p>Only those who could hold onto the Guru's robe as the Guru left would also be free to go. <a href="https://youtu.be/3myspuH4zkc?t=541" target="_blank" rel="noopener">Watch at 9:01</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q21" data-type="number" data-count="1">
+<legend><span class="n">21</span><span class="text">How many tassels did the Sikhs put on Guru Ji’s unique robe? </span></legend>
+<label class="num-wrap"><span class="sr">Your answer</span><input type="text" name="q21" inputmode="numeric" pattern="\s*50\s*" required placeholder="Type a number" autocomplete="off"></label>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>50</b></p>
+<p>Guru Ji asked the Sikhs to make a unique robe with 50 tassels for the prisoners to hold onto. <a href="https://youtu.be/3myspuH4zkc?t=551" target="_blank" rel="noopener">Watch at 9:11</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q22" data-type="choice" data-count="1">
+<legend><span class="n">22</span><span class="text">Two kings found no tassels left for them. What did Guru Ji let them hold onto? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q22" value="0" data-c><span>Guru Ji’s sleeves</span></label><label class="opt"><input type="radio" name="q22" value="1"><span>Guru Ji’s sword</span></label><label class="opt"><input type="radio" name="q22" value="2"><span>Guru Ji’s hands</span></label><label class="opt"><input type="radio" name="q22" value="3"><span>Guru Ji’s horse</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Guru Ji’s sleeves</b></p>
+<p>Seeing their love, Guru Ji smiled, raised their arms and let the two kings hold onto their sleeves. <a href="https://youtu.be/3myspuH4zkc?t=567" target="_blank" rel="noopener">Watch at 9:27</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q23" data-type="number" data-count="1">
+<legend><span class="n">23</span><span class="text">How many kings walked free by Guru Ji’s side? </span></legend>
+<label class="num-wrap"><span class="sr">Your answer</span><input type="text" name="q23" inputmode="numeric" pattern="\s*52\s*" required placeholder="Type a number" autocomplete="off"></label>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>52</b></p>
+<p>A crowd of thousands saw Guru Ji walk free with all 52 kings by their side. <a href="https://youtu.be/3myspuH4zkc?t=594" target="_blank" rel="noopener">Watch at 9:54</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q24" data-type="choice" data-count="1">
+<legend><span class="n">24</span><span class="text">From that day the Guru was known as “Bandi Chhor”. What does it mean? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q24" value="0"><span>The True King</span></label><label class="opt"><input type="radio" name="q24" value="1"><span>The Warrior</span></label><label class="opt"><input type="radio" name="q24" value="2"><span>The Light</span></label><label class="opt"><input type="radio" name="q24" value="3" data-c><span>The Liberator</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>The Liberator</b></p>
+<p>Bandi Chhor means 'The Liberator'. <a href="https://youtu.be/3myspuH4zkc?t=605" target="_blank" rel="noopener">Watch at 10:05</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q25" data-type="choice" data-count="1">
+<legend><span class="n">25</span><span class="text">Where did Guru Ji travel back to, where the Sikhs lit many diva lamps in celebration? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q25" value="0" data-c><span>Amritsar Sahib</span></label><label class="opt"><input type="radio" name="q25" value="1"><span>Gwalior</span></label><label class="opt"><input type="radio" name="q25" value="2"><span>Anandpur Sahib</span></label><label class="opt"><input type="radio" name="q25" value="3"><span>Delhi</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Amritsar Sahib</b></p>
+<p>Guru Ji travelled back to Amritsar Sahib, where the Sikhs lit many diva lamps to celebrate. <a href="https://youtu.be/3myspuH4zkc?t=613" target="_blank" rel="noopener">Watch at 10:13</a></p>
+</div>
+</fieldset>
+<fieldset class="q" id="q26" data-type="choice" data-count="1">
+<legend><span class="n">26</span><span class="text">Why are diva lamps lit, according to the end of the video? </span></legend>
+<div class="opts"><label class="opt"><input type="radio" name="q26" value="0" data-c><span>To recognise Guru Ji as the light that saves us from the prison of darkness</span></label><label class="opt"><input type="radio" name="q26" value="1"><span>To scare away lions</span></label><label class="opt"><input type="radio" name="q26" value="2"><span>To remember the emperor’s fort</span></label><label class="opt"><input type="radio" name="q26" value="3"><span>To mark the end of the 40 days</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>To recognise Guru Ji as the light that saves us from the prison of darkness</b></p>
+<p>Diva lamps are lit to recognise Guru Ji as the light that saves us from the prison of darkness, and to remember we too can be saved if we reach out and take Guru Ji’s support. <a href="https://youtu.be/3myspuH4zkc?t=636" target="_blank" rel="noopener">Watch at 10:36</a></p>
+</div>
+</fieldset></section>
+<section class="part"><h2><span class="pid">Part D</span> The whole story</h2><fieldset class="q" id="q27" data-type="order" data-count="1">
+<legend><span class="n">27</span><span class="text">Put these events in the order they happen in the video. </span></legend>
+<p class="hint"><span class="screen-only">Tap a number for each event</span><span class="print-only">Circle a number for each event</span>: 1 for what happens first, 7 for what happens last.</p><ol class="order"><li class="row"><span class="ev">Bhai Jetha Ji visits the emperor disguised as a doctor</span><span class="nums" role="radiogroup" aria-label="Position of: Bhai Jetha Ji visits the emperor disguised as a doctor"><label class="pos"><input type="radio" name="q27-0" value="1"><span>1</span></label><label class="pos"><input type="radio" name="q27-0" value="2"><span>2</span></label><label class="pos"><input type="radio" name="q27-0" value="3"><span>3</span></label><label class="pos"><input type="radio" name="q27-0" value="4"><span>4</span></label><label class="pos"><input type="radio" name="q27-0" value="5"><span>5</span></label><label class="pos"><input type="radio" name="q27-0" value="6" data-c><span>6</span></label><label class="pos"><input type="radio" name="q27-0" value="7"><span>7</span></label></span></li><li class="row"><span class="ev">Chandu pays an astrologer to lie</span><span class="nums" role="radiogroup" aria-label="Position of: Chandu pays an astrologer to lie"><label class="pos"><input type="radio" name="q27-1" value="1"><span>1</span></label><label class="pos"><input type="radio" name="q27-1" value="2" data-c><span>2</span></label><label class="pos"><input type="radio" name="q27-1" value="3"><span>3</span></label><label class="pos"><input type="radio" name="q27-1" value="4"><span>4</span></label><label class="pos"><input type="radio" name="q27-1" value="5"><span>5</span></label><label class="pos"><input type="radio" name="q27-1" value="6"><span>6</span></label><label class="pos"><input type="radio" name="q27-1" value="7"><span>7</span></label></span></li><li class="row"><span class="ev">Bhai Jetha Ji and Bhai Pirana Ji visit the emperor as lions</span><span class="nums" role="radiogroup" aria-label="Position of: Bhai Jetha Ji and Bhai Pirana Ji visit the emperor as lions"><label class="pos"><input type="radio" name="q27-2" value="1"><span>1</span></label><label class="pos"><input type="radio" name="q27-2" value="2"><span>2</span></label><label class="pos"><input type="radio" name="q27-2" value="3"><span>3</span></label><label class="pos"><input type="radio" name="q27-2" value="4"><span>4</span></label><label class="pos"><input type="radio" name="q27-2" value="5" data-c><span>5</span></label><label class="pos"><input type="radio" name="q27-2" value="6"><span>6</span></label><label class="pos"><input type="radio" name="q27-2" value="7"><span>7</span></label></span></li><li class="row"><span class="ev">Bhai Hardas Ji stops the poisoned robe</span><span class="nums" role="radiogroup" aria-label="Position of: Bhai Hardas Ji stops the poisoned robe"><label class="pos"><input type="radio" name="q27-3" value="1"><span>1</span></label><label class="pos"><input type="radio" name="q27-3" value="2"><span>2</span></label><label class="pos"><input type="radio" name="q27-3" value="3"><span>3</span></label><label class="pos"><input type="radio" name="q27-3" value="4" data-c><span>4</span></label><label class="pos"><input type="radio" name="q27-3" value="5"><span>5</span></label><label class="pos"><input type="radio" name="q27-3" value="6"><span>6</span></label><label class="pos"><input type="radio" name="q27-3" value="7"><span>7</span></label></span></li><li class="row"><span class="ev">Guru Ji enters Gwalior prison</span><span class="nums" role="radiogroup" aria-label="Position of: Guru Ji enters Gwalior prison"><label class="pos"><input type="radio" name="q27-4" value="1"><span>1</span></label><label class="pos"><input type="radio" name="q27-4" value="2"><span>2</span></label><label class="pos"><input type="radio" name="q27-4" value="3" data-c><span>3</span></label><label class="pos"><input type="radio" name="q27-4" value="4"><span>4</span></label><label class="pos"><input type="radio" name="q27-4" value="5"><span>5</span></label><label class="pos"><input type="radio" name="q27-4" value="6"><span>6</span></label><label class="pos"><input type="radio" name="q27-4" value="7"><span>7</span></label></span></li><li class="row"><span class="ev">The 52 kings walk free with Guru Ji</span><span class="nums" role="radiogroup" aria-label="Position of: The 52 kings walk free with Guru Ji"><label class="pos"><input type="radio" name="q27-5" value="1"><span>1</span></label><label class="pos"><input type="radio" name="q27-5" value="2"><span>2</span></label><label class="pos"><input type="radio" name="q27-5" value="3"><span>3</span></label><label class="pos"><input type="radio" name="q27-5" value="4"><span>4</span></label><label class="pos"><input type="radio" name="q27-5" value="5"><span>5</span></label><label class="pos"><input type="radio" name="q27-5" value="6"><span>6</span></label><label class="pos"><input type="radio" name="q27-5" value="7" data-c><span>7</span></label></span></li><li class="row"><span class="ev">Guru Ji saves the emperor from a lion</span><span class="nums" role="radiogroup" aria-label="Position of: Guru Ji saves the emperor from a lion"><label class="pos"><input type="radio" name="q27-6" value="1" data-c><span>1</span></label><label class="pos"><input type="radio" name="q27-6" value="2"><span>2</span></label><label class="pos"><input type="radio" name="q27-6" value="3"><span>3</span></label><label class="pos"><input type="radio" name="q27-6" value="4"><span>4</span></label><label class="pos"><input type="radio" name="q27-6" value="5"><span>5</span></label><label class="pos"><input type="radio" name="q27-6" value="6"><span>6</span></label><label class="pos"><input type="radio" name="q27-6" value="7"><span>7</span></label></span></li></ol>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="placed"> in the right place.</p><p class="ans">The right order is:<br>1. Guru Ji saves the emperor from a lion<br>2. Chandu pays an astrologer to lie<br>3. Guru Ji enters Gwalior prison<br>4. Bhai Hardas Ji stops the poisoned robe<br>5. Bhai Jetha Ji and Bhai Pirana Ji visit the emperor as lions<br>6. Bhai Jetha Ji visits the emperor disguised as a doctor<br>7. The 52 kings walk free with Guru Ji</p>
+<p>Lion attack (1:15) → astrologer (1:59) → Gwalior prison (4:07) → poisoned robe stopped (5:01) → lions (6:27) → doctor (7:47) → 52 kings free (9:54).</p>
+</div>
+</fieldset></section>
+<section class="part bonus-part"><h2><span class="pid">Bonus</span> One more, from the description</h2><fieldset class="q" id="bonus" data-type="choice" data-count="0">
+<legend><span class="n">Bonus</span><span class="text">The robe Guru Hargobind Sahib Ji wore to free the 52 kings can still be seen today. Where? </span></legend>
+<p class="src">From the video’s YouTube description, not the narration. Doesn’t count towards your score.</p><div class="opts"><label class="opt"><input type="radio" name="bonus" value="0"><span>In Gwalior fort</span></label><label class="opt"><input type="radio" name="bonus" value="1"><span>It no longer exists</span></label><label class="opt"><input type="radio" name="bonus" value="2" data-c><span>Gurdwara Chola Sahib, Ghudani Kalan, Punjab</span></label><label class="opt"><input type="radio" name="bonus" value="3"><span>In the emperor’s fort in Delhi</span></label></div>
+<div class="fb">
+<p class="verdict v-right">✓ Right</p><p class="verdict v-wrong">✗ Not quite</p>
+<p class="ans">Answer: <b>Gurdwara Chola Sahib, Ghudani Kalan, Punjab</b></p>
+<p>From the video’s description (not the narration): the robe can still be seen at Gurdwara Chola Sahib, Ghudani Kalan, Punjab.</p>
+</div>
+</fieldset></section>
+
+<section class="finish">
+  <h2>Finished?</h2>
+  <p class="answered">You’ve answered <b class="answered-num"></b> of 27.</p>
+  <label class="name"><span>Your name</span><input type="text" autocomplete="name" maxlength="40"></label>
+  <label class="check-btn"><input type="checkbox" id="check"><span class="off">Check my answers</span><span class="on">Marked ✓ (tap to hide the marks)</span></label>
+  <div class="score-card">
+    <p class="score"><span class="score-num"></span><small> / 27</small></p>
+    <p class="meta">Scroll up to see what you got wrong. Each one says why and links to that moment in the video.</p>
+    <p class="meta"><b>Screenshot this, with your name, and send it to your Jathedar.</b></p>
+  </div>
+  <button type="reset" class="again ghost">Start again (clears everything)</button>
+</section>
 </form>
 
-<section id="result" class="result" hidden tabindex="-1" aria-live="polite"></section>
-
 <footer class="foot">
-  <p>Questions written from the video only. Each answer links to the moment it’s said.</p>
-  <button type="button" id="print" class="ghost small">Print this quiz</button>
+  <p>Questions written from the video only. To print a paper copy, use your browser’s Print.</p>
 </footer>
-
-<script>
-const TOTAL = 27;
-const KEY = "W3sia2V5IjoicTEiLCJ0eXBlIjoiY2hvaWNlIiwiYW5zd2VyIjoxLCJ3aHkiOiJXb3JkIG9mIHRoZSBhcm15IHNwcmVhZCBhY3Jvc3MgdGhlIGxhbmQgYW5kIHN0cnVjayBmZWFyIGludG8gdGhlIGhlYXJ0IG9mIENoYW5kdS4iLCJ0IjozMywicmlnaHQiOiJDaGFuZHUiLCJuIjowfSx7ImtleSI6InEyIiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6Miwid2h5IjoiQ2hhbmR1IHBsYXllZCBhIGtleSByb2xlIGluIEd1cnUgQXJqYW4gRGV2IEppJ3MgbWFydHlyZG9tLCBhbmQgd2FzIHdvcnJpZWQgdGhlIEd1cnUncyBzb24sIEd1cnUgSGFyZ29iaW5kIFNhaGliIEppLCB3b3VsZCB1c2UgdGhlaXIgYXJteSB0byBzZWVrIHJldmVuZ2UuIiwidCI6NDIsInJpZ2h0IjoiR3VydSBBcmphbiBEZXYgSmkiLCJuIjowfSx7ImtleSI6InEzIiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6MCwid2h5IjoiQ2hhbmR1IGhvcGVkIHRoZSBlbXBlcm9yIHdvdWxkIGRlc3Bpc2UgdGhlIEd1cnUuIEluc3RlYWQsIHRoZSBlbXBlcm9yIGJlY2FtZSB2ZXJ5IGZvbmQgb2YgdGhlIEd1cnUuIiwidCI6NTgsInJpZ2h0IjoiVGhlIGVtcGVyb3Igd291bGQgZGVzcGlzZSB0aGUgR3VydSBhbmQgc2VlIHRoZW0gYXMgYW4gZW5lbXkiLCJuIjowfSx7ImtleSI6InE0IiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6Miwid2h5IjoiVGhlIHNvbGRpZXJzIGhpZCBpbiBmZWFyLiBHdXJ1IEppIGJsb2NrZWQgdGhlIGxpb24ncyBhdHRhY2sgd2l0aCB0aGVpciBzaGllbGQgYW5kIHF1aWNrbHkgc3RydWNrIGl0IHdpdGggdGhlaXIgc3dvcmQuIiwidCI6OTUsInJpZ2h0IjoiQmxvY2tlZCBpdHMgYXR0YWNrIHdpdGggdGhlaXIgc2hpZWxkIGFuZCBzdHJ1Y2sgaXQgd2l0aCB0aGVpciBzd29yZCIsIm4iOjB9LHsia2V5IjoicTUiLCJ0eXBlIjoiY2hvaWNlIiwiYW5zd2VyIjoyLCJ3aHkiOiJDaGFuZHUgcGFpZCA1MDAgY29pbnMgZmlyc3QgYW5kIHByb21pc2VkIGFub3RoZXIgNSwwMDAgY29pbnMgd2hlbiB0aGUgdGFzayB3YXMgZG9uZS4iLCJ0IjoxMjYsInJpZ2h0IjoiNTAwIGNvaW5zIGZpcnN0LCBhbmQgNSwwMDAgbW9yZSBvbmNlIHRoZSB0YXNrIHdhcyBkb25lIiwibiI6MH0seyJrZXkiOiJxNiIsInR5cGUiOiJjaG9pY2UiLCJhbnN3ZXIiOjEsIndoeSI6IlRoZSBsaWUgd2FzIHRoYXQgRW1wZXJvciBKYWhhbmdpciBoYWQgYmVlbiBjdXJzZWQgYW5kIHdvdWxkIGRpZSBpZiBoZSBkaWQgbm90IGFjdCBmYXN0LiIsInQiOjE0OCwicmlnaHQiOiJUaGF0IHRoZSBlbXBlcm9yIGhhZCBiZWVuIGN1cnNlZCwgYW5kIHdvdWxkIGRpZSBpZiBoZSBkaWRu4oCZdCBhY3QgZmFzdCIsIm4iOjB9LHsia2V5IjoicTciLCJ0eXBlIjoibXVsdGkiLCJhbnN3ZXIiOlswLDIsNF0sIndoeSI6IkJhdGhlIHRocmVlIHRpbWVzIGEgZGF5OyBtZWRpdGF0ZSBjb250aW51b3VzbHk7IGFuZCBkbyBpdCBhbGwgaW4gR3dhbGlvciBwcmlzb24gZm9yIDQwIGRheXMuIiwidCI6MTU3LCJyaWdodCI6IkJhdGhlIHRocmVlIHRpbWVzIGEgZGF5IMK3IE1lZGl0YXRlIGNvbnRpbnVvdXNseSDCtyBEbyBhbGwgb2YgdGhpcyBpbiBHd2FsaW9yIHByaXNvbiBmb3IgNDAgZGF5cyIsIm4iOjB9LHsia2V5IjoicTgiLCJ0eXBlIjoiY2hvaWNlIiwiYW5zd2VyIjozLCJ3aHkiOiJPbmx5IHNvbWVvbmUgY2FsbGVkIFwiSGFyZ29iaW5kXCIgY291bGQgY29tcGxldGUgdGhlIHRhc2tzLCBhbmQgQ2hhbmR1IHRoZW4gc3VnZ2VzdGVkIHRoYXQgb25seSBHdXJ1IEhhcmdvYmluZCBTYWhpYiBKaSBmaXR0ZWQgdGhlIGRlc2NyaXB0aW9uLiIsInQiOjE3OSwicmlnaHQiOiJPbmx5IHNvbWVvbmUgY2FsbGVkIOKAnEhhcmdvYmluZOKAnSIsIm4iOjB9LHsia2V5IjoicTkiLCJ0eXBlIjoiY2hvaWNlIiwiYW5zd2VyIjoxLCJ3aHkiOiJGYWxzZS4gR3VydSBKaSBrbmV3IHRoZSBlbXBlcm9yIGhhZCBiZWVuIGxpZWQgdG8sIGJ1dCBhZ3JlZWQgYW55d2F5OiB0aGV5IGtuZXcgdGhleSBoYWQgdG8gZW50ZXIgR3dhbGlvciBwcmlzb24gZm9yIGEgZGlmZmVyZW50IHJlYXNvbi4iLCJ0IjoyMzYsInJpZ2h0IjoiRmFsc2UiLCJuIjowfSx7ImtleSI6InExMCIsInR5cGUiOiJjaG9pY2UiLCJhbnN3ZXIiOjAsIndoeSI6Ik1hbnkgb2YgdGhlIHByaXNvbmVycyB3ZXJlIGtpbmdzIHdobyBoYWQgYmVlbiB3cm9uZ2x5IGltcHJpc29uZWQgYnkgdGhlIGVtcGVyb3IuIFRoZXkgd2VyZSBjb3ZlcmVkIGluIGxpY2UsIGluIGRpcnR5LCByaXBwZWQgY2xvdGhlcywgYW5kIG1hbnkgY291bGQgaGFyZGx5IHdhbGsuIiwidCI6MjQ3LCJyaWdodCI6Ik1hbnkga2luZ3Mgd2hvIGhhZCBiZWVuIHdyb25nbHkgaW1wcmlzb25lZCBieSB0aGUgZW1wZXJvciIsIm4iOjB9LHsia2V5IjoicTExIiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6Miwid2h5IjoiQ2hhbmR1IGhhZCBhIGJlYXV0aWZ1bCByb2JlIG1hZGUgYW5kIGNvdmVyZWQgaXQgaW4gYSBzdHJvbmcgcG9pc29uLCBob3BpbmcgaXQgd291bGQga2lsbCB0aGUgR3VydSBvbmNlIHdvcm4uIiwidCI6Mjg4LCJyaWdodCI6IkEgYmVhdXRpZnVsIHJvYmUgY292ZXJlZCBpbiBhIHN0cm9uZyBwb2lzb24iLCJuIjowfSx7ImtleSI6InExMiIsInR5cGUiOiJjaG9pY2UiLCJhbnN3ZXIiOjMsIndoeSI6IkJoYWkgSGFyZGFzIEppLCB0aGUgcHJpc29uIHdhcmRlbiwgaGFkIGFscmVhZHkgaGVhcmQgb2YgQ2hhbmR1J3MgcGxhbiBhbmQgc3RvcHBlZCB0aGUgcm9iZSBiZWluZyBkZWxpdmVyZWQuIiwidCI6MzAxLCJyaWdodCI6IkJoYWkgSGFyZGFzIEppLCB0aGUgcHJpc29uIHdhcmRlbiIsIm4iOjB9LHsia2V5IjoicTEzIiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6Mywid2h5IjoiR3VydSBKaSBzdGFydGVkIGEgcm91dGluZSBvZiBtZWRpdGF0aW9uIGFuZCBzZWxmbGVzcyBzZXJ2aWNlLCBrbm93biBhcyAnU2ltcmFuJyBhbmQgJ1NldmEnLiIsInQiOjMxNCwicmlnaHQiOiJTaW1yYW4gPSBtZWRpdGF0aW9uLCBTZXZhID0gc2VsZmxlc3Mgc2VydmljZSIsIm4iOjB9LHsia2V5IjoicTE0IiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6Mywid2h5IjoiQmVpbmcgaW4gcHJpc29uIGFuZCBiZWluZyBhIHByaXNvbmVyIGFyZSB0d28gdmVyeSBkaWZmZXJlbnQgdGhpbmdzLiIsInQiOjM1NSwicmlnaHQiOiJwcmlzb25lciIsIm4iOjB9LHsia2V5IjoicTE1IiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6Mywid2h5IjoiVGhlIGVtcGVyb3IgaGFkIGZvcmdvdHRlbiBhYm91dCBHdXJ1IEppLCBzbyB0aGUgU2lraHMgcmVhbGlzZWQgdGhleSBoYWQgdG8gcmVtaW5kIGhpbSB0aGVtc2VsdmVzLiIsInQiOjM3MSwicmlnaHQiOiJUaGUgZW1wZXJvciBoYWQgZm9yZ290dGVuIGFib3V0IEd1cnUgSmkiLCJuIjowfSx7ImtleSI6InExNiIsInR5cGUiOiJjaG9pY2UiLCJhbnN3ZXIiOjEsIndoeSI6IkJoYWkgSmV0aGEgSmkgYW5kIEJoYWkgUGlyYW5hIEppIHNudWNrIHBhc3QgdGhlIGd1YXJkcyBhbmQgZm91bmQgdGhlIGVtcGVyb3IgYXNsZWVwLiIsInQiOjM4NywicmlnaHQiOiJCaGFpIEpldGhhIEppIGFuZCBCaGFpIFBpcmFuYSBKaSIsIm4iOjB9LHsia2V5IjoicTE3IiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6MSwid2h5IjoiQ2hhbmR1IHNhaWQgdGhpcyBwcm92ZWQgdGhlIGN1cnNlIHdhcyByZWFsLCBhbmQgYWR2aXNlZCBrZWVwaW5nIEd1cnUgSmkgbG9ja2VkIGluIHByaXNvbi4iLCJ0Ijo0MzcsInJpZ2h0IjoiVGhhdCBpdCB3YXMgcHJvb2YgdGhlIGN1cnNlIHdhcyByZWFsLCBzbyBHdXJ1IEppIHNob3VsZCBzdGF5IGxvY2tlZCBpbiBwcmlzb24iLCJuIjowfSx7ImtleSI6InExOCIsInR5cGUiOiJjaG9pY2UiLCJhbnN3ZXIiOjEsIndoeSI6IlRoZSB0ZXJyaWZpZWQgZW1wZXJvciBjYWxsZWQgZm9yIGEgZG9jdG9yLCBhbmQgQmhhaSBKZXRoYSBKaSBkaXNndWlzZWQgaGltc2VsZiBhcyBvbmUuIiwidCI6NDY3LCJyaWdodCI6IkEgZG9jdG9yIiwibiI6MH0seyJrZXkiOiJxMTkiLCJ0eXBlIjoiY2hvaWNlIiwiYW5zd2VyIjowLCJ3aHkiOiJUaGUga2luZ3MgZGlkIG5vdCB3YW50IHRvIGJlIHdpdGhvdXQgdGhlIEd1cnUuIEd1cnUgSmkgc2FpZCB0aGF0IGlmIHRoZSBHdXJ1IHdhcyByZWxlYXNlZCwgYWxsIHRoZSBmYWxzZWx5IGltcHJpc29uZWQga2luZ3Mgd291bGQgaGF2ZSB0byBiZSByZWxlYXNlZCB0b28uIiwidCI6NTE5LCJyaWdodCI6IlRoYXQgYWxsIHRoZSBmYWxzZWx5IGltcHJpc29uZWQga2luZ3Mgd291bGQgaGF2ZSB0byBiZSByZWxlYXNlZCB0b28iLCJuIjowfSx7ImtleSI6InEyMCIsInR5cGUiOiJjaG9pY2UiLCJhbnN3ZXIiOjEsIndoeSI6Ik9ubHkgdGhvc2Ugd2hvIGNvdWxkIGhvbGQgb250byB0aGUgR3VydSdzIHJvYmUgYXMgdGhlIEd1cnUgbGVmdCB3b3VsZCBhbHNvIGJlIGZyZWUgdG8gZ28uIiwidCI6NTQxLCJyaWdodCI6Ik9ubHkgdGhvc2Ugd2hvIGNvdWxkIGhvbGQgb250byB0aGUgR3VydeKAmXMgcm9iZSBjb3VsZCBnbyIsIm4iOjB9LHsia2V5IjoicTIxIiwidHlwZSI6Im51bWJlciIsImFuc3dlciI6NTAsIndoeSI6Ikd1cnUgSmkgYXNrZWQgdGhlIFNpa2hzIHRvIG1ha2UgYSB1bmlxdWUgcm9iZSB3aXRoIDUwIHRhc3NlbHMgZm9yIHRoZSBwcmlzb25lcnMgdG8gaG9sZCBvbnRvLiIsInQiOjU1MSwicmlnaHQiOiI1MCIsIm4iOjB9LHsia2V5IjoicTIyIiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6MCwid2h5IjoiU2VlaW5nIHRoZWlyIGxvdmUsIEd1cnUgSmkgc21pbGVkLCByYWlzZWQgdGhlaXIgYXJtcyBhbmQgbGV0IHRoZSB0d28ga2luZ3MgaG9sZCBvbnRvIHRoZWlyIHNsZWV2ZXMuIiwidCI6NTY3LCJyaWdodCI6Ikd1cnUgSmnigJlzIHNsZWV2ZXMiLCJuIjowfSx7ImtleSI6InEyMyIsInR5cGUiOiJudW1iZXIiLCJhbnN3ZXIiOjUyLCJ3aHkiOiJBIGNyb3dkIG9mIHRob3VzYW5kcyBzYXcgR3VydSBKaSB3YWxrIGZyZWUgd2l0aCBhbGwgNTIga2luZ3MgYnkgdGhlaXIgc2lkZS4iLCJ0Ijo1OTQsInJpZ2h0IjoiNTIiLCJuIjowfSx7ImtleSI6InEyNCIsInR5cGUiOiJjaG9pY2UiLCJhbnN3ZXIiOjMsIndoeSI6IkJhbmRpIENoaG9yIG1lYW5zICdUaGUgTGliZXJhdG9yJy4iLCJ0Ijo2MDUsInJpZ2h0IjoiVGhlIExpYmVyYXRvciIsIm4iOjB9LHsia2V5IjoicTI1IiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6MCwid2h5IjoiR3VydSBKaSB0cmF2ZWxsZWQgYmFjayB0byBBbXJpdHNhciBTYWhpYiwgd2hlcmUgdGhlIFNpa2hzIGxpdCBtYW55IGRpdmEgbGFtcHMgdG8gY2VsZWJyYXRlLiIsInQiOjYxMywicmlnaHQiOiJBbXJpdHNhciBTYWhpYiIsIm4iOjB9LHsia2V5IjoicTI2IiwidHlwZSI6ImNob2ljZSIsImFuc3dlciI6MCwid2h5IjoiRGl2YSBsYW1wcyBhcmUgbGl0IHRvIHJlY29nbmlzZSBHdXJ1IEppIGFzIHRoZSBsaWdodCB0aGF0IHNhdmVzIHVzIGZyb20gdGhlIHByaXNvbiBvZiBkYXJrbmVzcywgYW5kIHRvIHJlbWVtYmVyIHdlIHRvbyBjYW4gYmUgc2F2ZWQgaWYgd2UgcmVhY2ggb3V0IGFuZCB0YWtlIEd1cnUgSmnigJlzIHN1cHBvcnQuIiwidCI6NjM2LCJyaWdodCI6IlRvIHJlY29nbmlzZSBHdXJ1IEppIGFzIHRoZSBsaWdodCB0aGF0IHNhdmVzIHVzIGZyb20gdGhlIHByaXNvbiBvZiBkYXJrbmVzcyIsIm4iOjB9LHsia2V5IjoicTI3IiwidHlwZSI6Im9yZGVyIiwiYW5zd2VyIjpbNiwyLDUsNCwzLDcsMV0sIndoeSI6Ikxpb24gYXR0YWNrICgxOjE1KSDihpIgYXN0cm9sb2dlciAoMTo1OSkg4oaSIEd3YWxpb3IgcHJpc29uICg0OjA3KSDihpIgcG9pc29uZWQgcm9iZSBzdG9wcGVkICg1OjAxKSDihpIgbGlvbnMgKDY6MjcpIOKGkiBkb2N0b3IgKDc6NDcpIOKGkiA1MiBraW5ncyBmcmVlICg5OjU0KS4iLCJ0IjoyNSwicmlnaHQiOiJHdXJ1IEppIHNhdmVzIHRoZSBlbXBlcm9yIGZyb20gYSBsaW9uIOKGkiBDaGFuZHUgcGF5cyBhbiBhc3Ryb2xvZ2VyIHRvIGxpZSDihpIgR3VydSBKaSBlbnRlcnMgR3dhbGlvciBwcmlzb24g4oaSIEJoYWkgSGFyZGFzIEppIHN0b3BzIHRoZSBwb2lzb25lZCByb2JlIOKGkiBCaGFpIEpldGhhIEppIGFuZCBCaGFpIFBpcmFuYSBKaSB2aXNpdCB0aGUgZW1wZXJvciBhcyBsaW9ucyDihpIgQmhhaSBKZXRoYSBKaSB2aXNpdHMgdGhlIGVtcGVyb3IgZGlzZ3Vpc2VkIGFzIGEgZG9jdG9yIOKGkiBUaGUgNTIga2luZ3Mgd2FsayBmcmVlIHdpdGggR3VydSBKaSIsIm4iOjd9LHsia2V5IjoiYm9udXMiLCJ0eXBlIjoiY2hvaWNlIiwiYW5zd2VyIjoyLCJ3aHkiOiJGcm9tIHRoZSB2aWRlb+KAmXMgZGVzY3JpcHRpb24gKG5vdCB0aGUgbmFycmF0aW9uKTogdGhlIHJvYmUgY2FuIHN0aWxsIGJlIHNlZW4gYXQgR3VyZHdhcmEgQ2hvbGEgU2FoaWIsIEdodWRhbmkgS2FsYW4sIFB1bmphYi4iLCJ0IjpudWxsLCJyaWdodCI6Ikd1cmR3YXJhIENob2xhIFNhaGliLCBHaHVkYW5pIEthbGFuLCBQdW5qYWIiLCJuIjowfV0=";
-// Runs inside quiz.html. TOTAL and KEY are written in by tools/build.mjs.
-// KEY is the answers, base64-encoded so they aren't sitting in plain view.
-(() => {
-  const answers = JSON.parse(
-    new TextDecoder().decode(Uint8Array.from(atob(KEY), (c) => c.charCodeAt(0))),
-  );
-  const VIDEO = 'https://youtu.be/3myspuH4zkc';
-  const STORE = 'nagni-bandi-chhor-quiz-v1';
-  const form = document.getElementById('quiz');
-  const who = document.getElementById('who');
-  const nudge = document.getElementById('nudge');
-  const result = document.getElementById('result');
-  const again = document.getElementById('again');
-  const check = document.getElementById('check');
-  let warned = false;
-
-  const mmss = (t) => `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`;
-  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-
-  // ----- reading what someone has put -----
-  function given(a) {
-    if (a.type === 'choice') {
-      const el = form.querySelector(`input[name="${a.key}"]:checked`);
-      return el ? Number(el.value) : null;
-    }
-    if (a.type === 'multi') {
-      const els = [...form.querySelectorAll(`input[name="${a.key}"]:checked`)];
-      return els.length ? els.map((e) => Number(e.value)) : null;
-    }
-    if (a.type === 'number') {
-      const v = form.querySelector(`input[name="${a.key}"]`).value.trim();
-      return v === '' ? null : Number(v);
-    }
-    if (a.type === 'order') {
-      const vals = [...Array(a.n)].map((_, k) => form.querySelector(`[name="${a.key}-${k}"]`).value);
-      return vals.every((v) => v === '') ? null : vals.map((v) => (v === '' ? null : Number(v)));
-    }
-  }
-  const complete = (a, g) => g !== null && (a.type !== 'order' || g.every((v) => v !== null));
-
-  function isRight(a, g) {
-    if (g === null) return false;
-    if (a.type === 'choice' || a.type === 'number') return g === a.answer;
-    if (a.type === 'multi') return g.length === a.answer.length && a.answer.every((x) => g.includes(x));
-    if (a.type === 'order') return g.every((v, k) => v === a.answer[k]);
-  }
-
-  // ----- saving progress on this device -----
-  function save() {
-    const data = { who: who.value, f: {} };
-    form.querySelectorAll('input, select').forEach((el) => {
-      if (el.type === 'radio' || el.type === 'checkbox') { if (el.checked) (data.f[el.name] ||= []).push(el.value); }
-      else if (el.value !== '') data.f[el.name] = el.value;
-    });
-    try { localStorage.setItem(STORE, JSON.stringify(data)); } catch {}
-  }
-  function restore() {
-    let data;
-    try { data = JSON.parse(localStorage.getItem(STORE) || 'null'); } catch {}
-    if (!data) return;
-    who.value = data.who || '';
-    form.querySelectorAll('input, select').forEach((el) => {
-      const v = data.f[el.name];
-      if (v === undefined) return;
-      if (el.type === 'radio' || el.type === 'checkbox') el.checked = v.includes(el.value);
-      else el.value = v;
-    });
-  }
-
-  function count() {
-    const counted = answers.filter((a) => a.key !== 'bonus');
-    const done = counted.filter((a) => complete(a, given(a))).length;
-    document.getElementById('count').textContent = done;
-    document.getElementById('fill').style.width = `${(done / TOTAL) * 100}%`;
-    return counted.filter((a) => !complete(a, given(a)));
-  }
-
-  // ----- marking -----
-  function mark() {
-    let score = 0;
-    let bonusRight = false;
-    const misses = [];
-    for (const a of answers) {
-      const box = document.getElementById(a.key);
-      const g = given(a);
-      const ok = isRight(a, g);
-      const n = box.querySelector('.n').textContent;
-      if (a.key === 'bonus') bonusRight = ok;
-      else if (ok) score++;
-      else misses.push({ n, t: a.t, order: a.type === 'order' });
-      box.classList.add(ok ? 'is-right' : 'is-wrong');
-
-      let extra = '';
-      if (a.type === 'order' && g) {
-        const placed = g.filter((v, k) => v === a.answer[k]).length;
-        extra = `<p>${placed} of ${a.n} in the right place. The right order is:<br>${esc(a.right).replace(/ → /g, ' →<br>')}</p>`;
-      }
-      if (a.type === 'choice' || a.type === 'multi') {
-        const right = Array.isArray(a.answer) ? a.answer : [a.answer];
-        box.querySelectorAll('input').forEach((el) => {
-          if (right.includes(Number(el.value))) el.closest('.opt').classList.add('was-right');
-        });
-      }
-      const fb = box.querySelector('.fb');
-      const link = a.t == null || a.type === 'order' ? '' : ` <a href="${VIDEO}?t=${a.t}" target="_blank" rel="noopener">Watch at ${mmss(a.t)}</a>`;
-      fb.innerHTML =
-        `<p class="verdict">${ok ? '✓ Right' : g === null ? '✗ Left blank' : '✗ Not quite'}</p>` +
-        (ok || a.type === 'order' ? '' : `<p>Answer: <b>${esc(a.right)}</b></p>`) +
-        extra +
-        `<p>${esc(a.why)}${link}</p>`;
-      fb.hidden = false;
-    }
-
-    form.classList.add('locked');
-    form.querySelectorAll('input, select').forEach((el) => (el.disabled = true));
-    who.disabled = true;
-    check.hidden = true;
-    again.hidden = false;
-    nudge.textContent = '';
-
-    const pct = score / TOTAL;
-    const msg =
-      score === TOTAL ? 'Full marks. Ready for the fort!'
-      : pct >= 0.8 ? 'Really strong. Re-watch the ones you missed.'
-      : pct >= 0.5 ? 'Good start. Re-watch the parts you missed, then try again.'
-      : 'Watch the video once more with your notes, then try again.';
-    const name = who.value.trim() || 'No name given';
-    const when = new Date().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-    const missList = misses.length
-      ? `<p class="misses"><b>Re-watch:</b> ${misses
-          .map((m) => (m.order ? `Q${m.n} (the order)` : `Q${m.n} (<a href="${VIDEO}?t=${m.t}" target="_blank" rel="noopener">${mmss(m.t)}</a>)`))
-          .join(', ')}</p>`
-      : '';
-    result.innerHTML = `<div class="card">
-      <p class="who">${esc(name)}</p>
-      <p class="score">${score}<small> / ${TOTAL}</small></p>
-      <p class="msg">${msg}</p>
-      <p class="meta">Bonus: ${bonusRight ? '✓' : '✗'} · ${esc(when)}</p>
-      <p class="meta">Screenshot this and send it to your Jathedar.</p>
-      ${missList}
-    </div>`;
-    result.hidden = false;
-    form.parentNode.insertBefore(result, form); // score sits above the questions
-    result.focus();
-    result.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
-
-  function reset() {
-    form.reset();
-    form.classList.remove('locked');
-    form.querySelectorAll('.q').forEach((q) => {
-      q.classList.remove('is-right', 'is-wrong');
-      q.querySelector('.fb').hidden = true;
-    });
-    form.querySelectorAll('.was-right').forEach((o) => o.classList.remove('was-right'));
-    form.querySelectorAll('input, select').forEach((el) => (el.disabled = false));
-    who.disabled = false;
-    check.hidden = false;
-    again.hidden = true;
-    result.hidden = true;
-    warned = false;
-    save();
-    count();
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  // ----- wiring -----
-  form.addEventListener('change', () => { warned = false; nudge.textContent = ''; save(); count(); });
-  form.addEventListener('input', () => { save(); count(); });
-  who.addEventListener('input', save);
-  form.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const blank = count();
-    if (blank.length && !warned) {
-      warned = true;
-      const names = blank.map((a) => document.getElementById(a.key).querySelector('.n').textContent);
-      nudge.textContent = `${blank.length} not finished (Q${names.join(', Q')}). Press again to check anyway.`;
-      return;
-    }
-    mark();
-  });
-  again.addEventListener('click', reset);
-  document.getElementById('print').addEventListener('click', () => window.print());
-
-  restore();
-  count();
-})();
-
-</script>
 </body>
 </html>

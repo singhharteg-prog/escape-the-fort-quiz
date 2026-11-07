@@ -41,8 +41,10 @@ body {
 a { color: var(--accent); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 
-.top, form, .result, .foot { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+.quiz, .foot { max-width: 680px; margin: 0 auto; padding: 0 16px; }
+.quiz { counter-reset: score answered; }
 .top { padding-top: 28px; padding-bottom: 8px; }
+.print-only { display: none; }
 .diva { width: 44px; height: 44px; display: block; margin-bottom: 8px; }
 .diva .flame { fill: var(--flame); }
 .diva .bowl, .diva .bowl-rim { fill: var(--accent); }
@@ -53,18 +55,14 @@ h1 { font-family: Georgia, "Times New Roman", serif; font-size: 34px; line-heigh
 
 .name { display: block; margin: 8px 0 4px; }
 .name span { display: block; font-weight: 700; margin-bottom: 4px; }
-input[type=text], input[type=number], select {
+input[type=text] {
   font: inherit; color: var(--ink); background: var(--card);
   border: 2px solid var(--line); border-radius: 10px; padding: 10px 12px;
 }
 input[type=text] { width: 100%; }
-input:focus-visible, select:focus-visible, button:focus-visible, .opt:has(input:focus-visible) {
+input:focus-visible, button:focus-visible, .opt:has(input:focus-visible) {
   outline: 3px solid var(--accent); outline-offset: 2px;
 }
-
-.bar { position: sticky; top: 0; z-index: 2; background: var(--paper); border-bottom: 1px solid var(--line); }
-.bar-in { max-width: 680px; margin: 0 auto; padding: 8px 16px; font-size: 14px; color: var(--soft); position: relative; }
-.bar-in i { position: absolute; left: 0; bottom: -1px; height: 3px; width: 0; background: var(--flame); transition: width .3s; }
 
 .part { margin-top: 28px; }
 h2 { font-family: Georgia, "Times New Roman", serif; font-size: 24px; margin: 0 0 12px; }
@@ -91,52 +89,77 @@ h2 { font-family: Georgia, "Times New Roman", serif; font-size: 24px; margin: 0 
 .opt:has(input:checked) { border-color: var(--accent); background: var(--pick); }
 
 .num-wrap { clear: both; display: block; margin-top: 12px; }
-.num-wrap input { width: 8em; font-size: 20px; }
+.num-wrap input { width: 10em; font-size: 20px; }
 
-.order { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 8px; }
-.order label { display: flex; gap: 10px; align-items: center; border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; }
-.order select { flex: none; width: 4.2em; padding: 8px; }
+.order { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 10px; }
+.row { border: 2px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.ev { display: block; margin-bottom: 6px; }
+.nums { display: flex; gap: 6px; flex-wrap: wrap; }
+.pos { position: relative; cursor: pointer; }
+.pos input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.pos span {
+  display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid var(--line); font-weight: 700; color: var(--soft);
+}
+.pos:has(input:checked) span { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.pos:has(input:focus-visible) span { outline: 3px solid var(--accent); outline-offset: 2px; }
+.row:has(input:checked) { border-color: var(--accent); }
+
+/* counters: answered questions, and how many order rows are right */
+/* (on the number badge: the legend itself is display: contents, which never counts) */
+.q[data-count="1"]:has(input:checked) > legend .n,
+.q[data-count="1"][data-type=number]:has(input:not(:placeholder-shown)) > legend .n { counter-increment: answered; }
+.q[data-type=order] { counter-reset: placed; }
+.row:has(input[data-c]:checked) { counter-increment: placed; }
+.placed::before { content: counter(placed) " of 7"; font-weight: 700; }
+.answered-num::before { content: counter(answered); }
+.score-num::before { content: counter(score); }
 
 /* after marking */
-.q.is-right { border-color: var(--right); }
-.q.is-wrong { border-color: var(--wrong); }
-.fb { margin-top: 12px; border-radius: 10px; padding: 10px 12px; font-size: 15px; }
-.is-right .fb { background: var(--right-bg); }
-.is-wrong .fb { background: var(--wrong-bg); }
+.fb { display: none; margin-top: 12px; border-radius: 10px; padding: 10px 12px; font-size: 15px; background: var(--wrong-bg); }
 .fb .verdict { font-weight: 700; margin: 0 0 4px; }
-.is-right .verdict { color: var(--right); }
-.is-wrong .verdict { color: var(--wrong); }
+.v-right { color: var(--right); }
+.v-wrong { color: var(--wrong); }
+.quiz:has(#check:checked) .opt:has(input[data-c]) { border-color: var(--right); }
+.quiz:has(#check:checked) .pos:has(input[data-c]) span { border-color: var(--right); }
+.quiz:has(#check:checked) .q { pointer-events: none; }
+.quiz:has(#check:checked) .q a { pointer-events: auto; }
 .fb p { margin: 4px 0 0; }
-.opt.was-right { border-color: var(--right); }
-.locked .opt, .locked .order label { cursor: default; }
 
-.actions { margin: 28px 0 8px; display: grid; gap: 10px; }
-.nudge { margin: 0; min-height: 1.5em; font-weight: 600; color: var(--wrong); }
-button {
-  font: inherit; font-weight: 700; cursor: pointer; border-radius: 12px; padding: 14px 18px;
+.finish { margin: 36px 0 8px; padding-top: 20px; border-top: 2px solid var(--line); display: grid; gap: 14px; }
+.finish h2 { margin: 0; }
+.answered { margin: 0; color: var(--soft); }
+.name { display: block; }
+.check-btn {
+  display: block; text-align: center; cursor: pointer; font-weight: 700; border-radius: 12px; padding: 14px 18px;
   border: 2px solid var(--accent); background: var(--accent); color: var(--paper);
 }
-button.ghost { background: transparent; color: var(--accent); }
-button.small { padding: 8px 14px; font-size: 15px; }
-
-.result { margin-top: 8px; scroll-margin-top: 56px; }
-.q { scroll-margin-top: 56px; }
-.opt.was-right:has(input:checked) { border-color: var(--right); background: var(--right-bg); }
-.result .card {
-  border: 2px solid var(--accent); border-radius: 16px; padding: 20px; background: var(--card); text-align: center;
+.check-btn input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.check-btn:has(input:focus-visible) { outline: 3px solid var(--accent); outline-offset: 3px; }
+.check-btn .on, .score-card, .again { display: none; }
+.check-btn:has(input:checked) { background: transparent; color: var(--accent); }
+.check-btn:has(input:checked) .off { display: none; }
+.check-btn:has(input:checked) .on { display: inline; }
+.quiz:has(#check:checked) .score-card, .quiz:has(#check:checked) .again { display: block; }
+.score-card { border: 2px solid var(--accent); border-radius: 16px; padding: 20px; background: var(--card); text-align: center; }
+.score-card .score { font-family: Georgia, serif; font-size: 56px; line-height: 1.1; margin: 0 0 8px; }
+.score-card .score small { font-size: 24px; color: var(--soft); }
+.score-card .meta { margin: 6px 0 0; font-size: 15px; color: var(--soft); }
+button {
+  font: inherit; font-weight: 700; cursor: pointer; border-radius: 12px; padding: 14px 18px;
+  border: 2px solid var(--accent); background: transparent; color: var(--accent);
 }
-.result .who { margin: 0; font-weight: 700; color: var(--accent); }
-.result .score { font-family: Georgia, serif; font-size: 56px; line-height: 1.1; margin: 6px 0; }
-.result .score small { font-size: 24px; color: var(--soft); }
-.result .msg { margin: 0 0 6px; font-weight: 600; }
-.result .meta { margin: 0; font-size: 14px; color: var(--soft); }
-.result .misses { text-align: left; margin: 14px 0 0; font-size: 15px; }
 
 .foot { margin: 36px auto 48px; font-size: 14px; color: var(--soft); }
 
 .print-only { display: none; }
 @media print {
   .print-only { display: inline; }
+  .print-name { display: block; margin: 16px 0 0; font-weight: 700; }
+  .finish, .foot { display: none !important; }
+  .pos span { width: 24px; height: 24px; border: 1px solid #000; color: #000; background: #fff; font-weight: 400; }
+  .row { padding: 4px 8px; border-width: 1px; }
+  .ev { margin-bottom: 2px; }
   .screen-only { display: none; }
   :root { color-scheme: light; }
   .opt input, .opts input {
@@ -147,14 +170,12 @@ button.small { padding: 8px 14px; font-size: 15px; }
   .opts { grid-template-columns: 1fr 1fr; }
   :root { --paper: #fff; --card: #fff; --ink: #000; --soft: #333; --accent: #000; --line: #999; --pick: #fff; }
   body { font-size: 12pt; }
-  .bar, .actions, .result, .foot button, .fb, noscript, .diva { display: none !important; }
-  .name input { border: 0; border-bottom: 1px solid #000; border-radius: 0; }
+  .fb, .diva { display: none !important; }
   .q { break-inside: avoid; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; }
   .opts { gap: 4px; margin-top: 6px; }
   .opt { min-height: 0; padding: 4px 8px; border-width: 1px; }
-  .order label { padding: 4px 8px; border-width: 1px; }
-  .order select { appearance: none; -webkit-appearance: none; color: transparent; width: 2.6em; height: 1.8em; padding: 0; border: 1px solid #000; }
   .num-wrap input { border: 1px solid #000; height: 1.8em; }
+  .num-wrap input::placeholder { color: transparent; }
   .part { margin-top: 14px; }
   a { text-decoration: none; color: #000; }
 }
