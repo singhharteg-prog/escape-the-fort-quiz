@@ -29,7 +29,9 @@ and the release · put the story in order), plus one bonus that doesn't count.
   The page says so, and it doesn't count towards the score.
 - Wrong options are made up on purpose. Only the right answers are claims.
 - Titles in full: Guru Hargobind Sahib Ji, Guru Arjan Dev Ji, Bhai Hardas Ji,
-  Bhai Jetha Ji, Bhai Pirana Ji.
+  Bhai Jetha Ji, Bhai Pirana Ji. Always **Guru Ji**, never "the Guru".
+- Options mustn't give the answer away by length or extra detail (e.g. a job
+  title on the right name, or one long gurdwara name among short options).
 - One caption is unclear: at 2:59 it reads *“Jungle's final instruction…”*,
   probably a mis-typed “Chandu's”. No question depends on who said that line.
 
