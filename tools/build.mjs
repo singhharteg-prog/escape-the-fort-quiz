@@ -1,12 +1,13 @@
 // Builds the two pages from data/questions.mjs:
 //   quiz.html        the team's quiz: one self-contained file, no script, no internet needed
 //   answer-key.html  the Jathedar's answer key: never send this to the team
+//   docs/index.html  the same quiz, for the GitHub Pages link
 //
 //   node tools/build.mjs
 //
 // It refuses to build if a question is malformed (see check()).
 
-import { writeFileSync, readFileSync } from 'node:fs';
+import { writeFileSync, readFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { VIDEO, PARTS, QUESTIONS, BONUS } from '../data/questions.mjs';
@@ -302,7 +303,13 @@ a{color:var(--accent)}
 
 check();
 const list = prepared();
-writeFileSync(join(ROOT, 'quiz.html'), quizHTML(list));
+const quiz = quizHTML(list);
+writeFileSync(join(ROOT, 'quiz.html'), quiz);
+// GitHub Pages serves ONLY docs/, so the live link has the quiz and nothing
+// else: the answer key is never at a guessable address.
+mkdirSync(join(ROOT, 'docs'), { recursive: true });
+writeFileSync(join(ROOT, 'docs/index.html'), quiz);
+writeFileSync(join(ROOT, 'docs/.nojekyll'), '');
 writeFileSync(join(ROOT, 'answer-key.html'), keyHTML(list));
 const spread = [0, 0, 0, 0];
 list.filter((q) => q.type === 'choice' && q.options.length === 4).forEach((q) => spread[q.answer]++);
